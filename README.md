@@ -1,64 +1,123 @@
-# Docker-TTS-API
+# 🎙️ Universal XTTSv2 API (RTX 50-Series Optimized)
+A high-performance clone/derivative of [lojik-ng/docker-tts-api-ui](https://github.com/lojik-ng/docker-tts-api-ui).
 
-### AI text-to-speech and XTTS-2 Text-Based Voice Cloning
+A high-performance, containerised Text-to-Speech API using Coqui XTTSv2. This build is specifically patched to support the **NVIDIA Blackwell (RTX 5090/5080)** architecture and PyTorch 2.6+ security layers, ensuring near-instant voice cloning on modern hardware.
 
-Docker container for xttsV2 with API, UI & voice cloning.
-This project is based on Coqui-TTS to make AI text to speech and voice cloning simple to install using docker.
-Seeing that most AI projects require python sknowledge to deploy, i decided to write use NodeJS/Javascript to create a simple to use AI Text to speech API. If you clone good quality voices, you'll get eleven labs quality. I found out that using 10 minutes of continous speech as a voice to clone gave me amazing Eleven labs quality results. You can clone with as short as 60 seconds audio but i found 10 minutes as the sweet spot that gave me the best results. Use [podcast.adobe.com/enhance](https://podcast.adobe.com/enhance) to clean any audio you want to clone.
+---
 
-## Installation
+## 🚀 Features
 
-After installation, the TTS engine may take some time to start up as it needs to download the models. This is one-time only.
+*   **Persistent Inference**: The model stays resident in VRAM for < 1s generation times.
+*   **Blackwell Support**: Custom library patches for RTX 50-series compatibility.
+*   **Zero-Shot Cloning**: Clone any voice using a 6-10 second `.wav` sample.
+*   **Universal Build**: Automatically scales down to older hardware (e.g., GTX 1080).
+*   **Dual-Server Architecture**: Python Flask engine for AI + Node.js Express for API.
 
-```sh
-git clone https://github.com/lojik-ng/docker-tts-api-ui.git
-cd docker-tts-api-ui
-mv server/keys.sample.json server/keys.json
-docker build -t docker-tts-api-ui .
-docker run -d -it -p 2902:2902 --gpus all  --restart=unless-stopped -v .:/shared -v ./models:/root/.local/share/tts --name docker-tts-api-ui docker-tts-api-ui
+---
+
+## 🛠️ Prerequisites
+
+Before cloning, ensure the host machine has:
+
+*   **NVIDIA Drivers**: Latest Game Ready or Studio drivers.
+*   **WSL2**: Windows Subsystem for Linux (`wsl --install`).
+*   **Docker Desktop**: Configured to use the WSL2 backend.
+
+---
+
+## 📂 Project Structure
+
+```plaintext
+.
+├── voices/               # Place reference .wav files here
+├── models/               # AI model weights (auto-downloaded)
+├── server/
+│   ├── index.js          # Node.js API Gateway
+│   ├── tts_engine.py     # Persistent Python AI Engine
+│   └── public/           # Generated audio files
+├── Dockerfile            # Blackwell-ready build
+└── entrypoint.sh         # Hardware patching & boot logic
 ```
 
-You can now access the ui at `http://localhost:2902/`.
+---
 
-<h1 align="center">    
-  <img src="screenshot.png" width="50%"></a>  
-</h1>
+## ⚡ Quick Start
 
-### Endpoints/API
+### 1. Prepare your Voices
+Place a clear, 10-second `.wav` file of the voice you wish to clone into the `/voices` directory (e.g., `hero.wav`).
 
-- To get list of available default voice models, Send a GET request to `http://localhost:2902/list-models`
-- To get list of available clone voices, Send a GET request to `/list-voices`
-- To use a default voice model, send a POST request to `http://localhost:2902/use-model` with `{prompt: string, apiKey: string, speaker: string, forceDownload: boolean}`
-- To generate with a cloned voice, send a POST request to `http://localhost:2902/use-voice` with `{prompt: string, apiKey: string, speaker: string, forceDownload: boolean}`
-- Check server/index.html for example usage of the endpoints
-- forceDownload will make the server return a downloadable stream if true or json with filename property if false. (See server/index.html)
+### 2. Build the Image
+```powershell
+docker build -t my-universal-tts .
+```
 
-### Voice Cloning
+### 3. Run the Container
+Replace `C:\Path\To\Project` with your actual local path.
 
-- To clone a voice, copy a .wav audio file of the voice into /voices folder in the cloned repository. The docker container will use it from there.
-- The filename of the audio file (without the extension - .wav) becomes the name of the cloned voice automatically.
-- The list endoint of clone voice will automatically list it among available cloned voices.
+```powershell
+docker run -d -it -p 2902:2902 --gpus all --restart=unless-stopped `
+-e TORCH_FORCE_WEIGHTS_ONLY_LOAD=0 `
+-v "C:\Path\To\Project:/shared" `
+-v "C:\Path\To\Project\models:/root/.local/share/tts" `
+-v "/usr/lib/wsl/lib:/usr/lib/wsl/lib:ro" `
+--shm-size=8gb `
+--name docker-tts-api-ui my-universal-tts
+```
 
-### API Keys/Authentication
+---
 
-- Edit /server/keys.json in the cloned repository anytime to add or remove API keys.
+## 📡 API Usage
 
-### Logging
+### Generate Voice
+`POST http://localhost:2902/use-voice`
 
-- logs are rotated daily and can be found in /logs folder of the cloned repository.
-- Logs are never purged. You'll need to manually purge the logs.
-- Access logs, error logs etc are lumped together
+**Body (JSON):**
+```json
+{
+  "prompt": "The 5090 is officially the king of speech synthesis.",
+  "apiKey": "your_key_here",
+  "speaker": "hero",
+  "language": "en"
+}
+```
 
-### Features
+### List Voices
+`GET http://localhost:2902/list-voices`
 
-- Requires GPU. I tested with Nvidia GPU (Cuda). I dont have AMD gpu to test.
-- Not intended for parallel generation. I didnt test with parallel generation.
-- API is written in NodeJS so should be easy for JS devs to modify. Check `server/index.js`.
-- Returns mp3 files. I bundled it with ffmpeg to convert the generated .wav file into mp3 before sending. If you prefer .wav or any other audio file type, modify `server/index.js`
-- Authentication: You can add as many users and ban users just by editing the `server/keys.json` file.
-- Logging: It logs all user requests, errors etc.
+---
 
-## Credits
+## 🔧 Hardware Optimization Notes
 
-- This software uses libraries from the [FFmpeg](http://ffmpeg.org) project under the [LGPLv2.1](http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
-- This software uses [Coqui TTS](https://github.com/coqui-ai/TTS)
+### RTX 5090 / 9800X3D
+On this hardware, the first request will take ~15 seconds to load the 2GB model into VRAM. Every subsequent request will be near-instant. Use the `--shm-size=8gb` flag to prevent memory bottlenecks between the CPU and GPU.
+
+### GTX 1080 / Older Cards
+This build is **"Universal"**. It will detect older CUDA cores and adjust the kernels accordingly. Ensure you have at least 8GB of VRAM available for stable performance.
+
+---
+
+## ⚠️ Troubleshooting
+
+1.  **GPU not "touching" the workload?** Ensure you are passing the `/usr/lib/wsl/lib` volume mount. This is required for Docker to see the Blackwell drivers on Windows.
+2.  **AttributeError / Pickle Errors**: These are handled by the `entrypoint.sh` patches. If they persist, ensure `TORCH_FORCE_WEIGHTS_ONLY_LOAD=0` is set in your environment.
+3.  **Robotic Audio**: Check your reference `.wav` file. It should be clean, mono, and roughly 10 seconds long.
+
+---
+
+## 📄 License
+
+This project is for educational/personal use. Please adhere to the Coqui TTS and Model licenses regarding commercial usage and ethical AI voice cloning.
+
+---
+
+## 📝 .gitignore Recommendation
+
+```plaintext
+node_modules/
+models/
+public/*.wav
+public/*.mp3
+logs/*.log
+keys.json
+.DS_Store
+```

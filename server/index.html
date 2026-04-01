@@ -11,9 +11,6 @@
 <body class="bg-light">
     <div class="container py-5">
         <h1 class="text-center mb-4">Text To Speech Server</h1>
-        <div>See API documentation here: <a target="_blank"
-                href="https://github.com/lojik-ng/docker-tts-api-ui">https://github.com/lojik-ng/docker-tts-api-ui</a>
-        </div>
         <!-- Form 1 -->
         <div class="card mb-4">
             <div class="card-header">
@@ -87,34 +84,6 @@
             </svg>
             <h5 style="display: block; text-align: center;">Please wait...</h5>
         </div>
-        <!-- Form 2 -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h4>Use Default Models</h4>
-            </div>
-            <div class="card-body">
-                <p>Send a POST request to <code>/use-model</code> with <code>{prompt, apiKey, speaker}</code></p>
-                <p>To get list of available default voices, Send a GET request to <code>/list-models</code></p>
-                <form id="modelForm" action="/use-model" method="POST">
-                    <div class="mb-3">
-                        <label for="apiKey2" class="form-label">API Key</label>
-                        <input type="text" id="apiKey2" name="apiKey" class="form-control" required />
-                    </div>
-                    <div class="mb-3">
-                        <label for="text2" class="form-label">Prompt/Text</label>
-                        <textarea id="text2" name="prompt" class="form-control" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="voice2" class="form-label">Speaker</label>
-                        <select id="voice2" name="speaker" class="form-select" required>
-                            <option value="">Select A Voice</option>
-                            <!-- Add options here -->
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary submit">Submit</button>
-                </form>
-            </div>
-        </div>
     </div>
     <div class="p-5 m-5">&nbsp;</div>
     <div class="bg-secondary fixed-bottom p-2">
@@ -130,9 +99,7 @@
         const loading = document.getElementById('loading');
         const audio1 = document.getElementById('audio1');
         const form = document.getElementById('voiceForm');
-        form.addEventListener('submit', handleSubmit);
-        const form2 = document.getElementById('modelForm');
-        form2.addEventListener('submit', handleSubmit);
+        if (form) form.addEventListener('submit', handleSubmit);
         // make a get request to /list-voices to get the list of voices
         fetch('/list-voices')
             .then(response => response.json())
@@ -148,19 +115,6 @@
             .catch(error => console.error(error));
 
 
-        // make a get request to /list-models to get the list of voices
-        fetch('/list-models')
-            .then(response => response.json())
-            .then(data => {
-                // add the voices to the select options
-                data.speakers.forEach(speaker => {
-                    const option = document.createElement('option');
-                    option.value = speaker;
-                    option.text = speaker;
-                    voices2.appendChild(option);
-                });
-            })
-            .catch(error => console.error(error));
 
         async function handleSubmit(event) {
             event.preventDefault();
@@ -170,7 +124,7 @@
             });
             loading.classList.remove('d-none');
             // /make a post`` request 
-            const endpoint = event.target.id == 'modelForm' ? '/use-model' : '/use-voice';
+            const endpoint = '/use-voice';
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
