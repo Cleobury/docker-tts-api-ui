@@ -32,10 +32,18 @@
                     </div>
                     <div class="mb-3">
                         <label for="voice1" class="form-label">Speaker</label>
-                        <select id="voice1" name="speaker" class="form-select" required>
-                            <option value="">Select A Voice</option>
-                            <!-- Add options here -->
-                        </select>
+                        <div class="input-group">
+                            <select id="voice1" name="speaker" class="form-select" required>
+                                <option value="">Select A Voice</option>
+                                <!-- Add options here -->
+                            </select>
+                            <button type="button" class="btn btn-outline-secondary" id="refreshVoices" title="Refresh Voices">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658a.25.25 0 0 1-.41-.192z"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary submit">Submit</button>
                 </form>
@@ -99,20 +107,31 @@
         const loading = document.getElementById('loading');
         const audio1 = document.getElementById('audio1');
         const form = document.getElementById('voiceForm');
+        const refreshBtn = document.getElementById('refreshVoices');
+
         if (form) form.addEventListener('submit', handleSubmit);
-        // make a get request to /list-voices to get the list of voices
-        fetch('/list-voices')
-            .then(response => response.json())
-            .then(data => {
-                // add the voices to the select options
-                data.speakers.forEach(speaker => {
-                    const option = document.createElement('option');
-                    option.value = speaker;
-                    option.text = speaker;
-                    voices1.appendChild(option);
-                });
-            })
-            .catch(error => console.error(error));
+        if (refreshBtn) refreshBtn.addEventListener('click', loadVoices);
+
+        function loadVoices() {
+            const currentVoice = voices1.value;
+            voices1.innerHTML = '<option value="">Select A Voice</option>';
+            
+            fetch('/list-voices')
+                .then(response => response.json())
+                .then(data => {
+                    data.speakers.forEach(speaker => {
+                        const option = document.createElement('option');
+                        option.value = speaker;
+                        option.text = speaker;
+                        if (speaker === currentVoice) option.selected = true;
+                        voices1.appendChild(option);
+                    });
+                })
+                .catch(error => console.error(error));
+        }
+
+        // Initial load
+        loadVoices();
 
 
 
@@ -137,18 +156,18 @@
                     forceDownload: false
                 })
             });
-            const data = await response.json();
+
             document.querySelectorAll('.card').forEach(card => {
                 card.classList.remove('d-none');
             });
-
             loading.classList.add('d-none');
+
             if (!response.ok) {
-                alert('Error: ' + response.statusText);
-            } else if (data.error) {
-                alert('Error: ' + response.error);
+                const data = await response.json();
+                alert('Error: ' + (data.error || response.statusText));
             } else {
-                audio1.src = data.filename;
+                const blob = await response.blob();
+                audio1.src = URL.createObjectURL(blob);
                 audio1.play();
             }
         }

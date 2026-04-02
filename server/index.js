@@ -45,10 +45,10 @@ app.post('/use-voice', async (req, res) => {
     let { prompt, apiKey, speaker, language } = req.body;
 
     if (!authenticate(apiKey)) {
-        return res.status(200).json({ error: 'Invalid API key.' });
+        return res.status(401).json({ error: 'Invalid API key.' });
     }
     if (!prompt?.trim()) {
-        return res.status(200).json({ error: 'Prompt is empty.' });
+        return res.status(400).json({ error: 'Prompt is empty.' });
     }
 
     const filename = `${speaker}_${uuidv4()}.wav`;
@@ -56,7 +56,7 @@ app.post('/use-voice', async (req, res) => {
     const modelFile = path.join(voicesPath, `${speaker}.wav`);
 
     if (!fs.existsSync(modelFile)) {
-        return res.status(200).json({ error: 'Voice file not found.' });
+        return res.status(404).json({ error: 'Voice file not found.' });
     }
 
     log(`Request from ${apiKey}: ${prompt.substring(0, 30)}...`);
@@ -81,9 +81,16 @@ app.post('/use-voice', async (req, res) => {
                 res.status(500).json({ error: 'Conversion failed' });
             })
             .on('end', () => {
-                // Clean up the heavy .wav file, keep the .mp3
+                // Clean up the heavy .wav file
                 if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-                res.status(200).json({ filename: mp3FileName });
+                
+                // Send the .mp3 file directly and then delete it
+                res.sendFile(mp3Path, (err) => {
+                    if (err) {
+                        log(`SendFile Error: ${err.message}`);
+                    }
+                    if (fs.existsSync(mp3Path)) fs.unlinkSync(mp3Path);
+                });
             })
             .save(mp3Path);
 
