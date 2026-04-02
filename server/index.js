@@ -88,6 +88,8 @@ app.post('/use-voice', async (req, res) => {
                 res.sendFile(mp3Path, (err) => {
                     if (err) {
                         log(`SendFile Error: ${err.message}`);
+                    } else {
+                        log(`Successfully sent binary audio: ${mp3FileName}`);
                     }
                     if (fs.existsSync(mp3Path)) fs.unlinkSync(mp3Path);
                 });
