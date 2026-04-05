@@ -44,7 +44,12 @@ Before cloning, ensure the host machine has:
 ## ⚡ Quick Start
 
 ### 1. Prepare your Voices
-Place a clear, 10-second `.wav` file of the voice you wish to clone into the `/voices` directory (e.g., `hero.wav`).
+Place clear `.wav` files of the voice you wish to clone into the `/voices` directory.
+- **Single Clip**: Just place a file like `hero.wav`.
+- **Multiple Clips (Higher Quality)**: You can improve the cloning quality by providing multiple samples. There are two ways to do this:
+    - **Folders**: Create a folder named `voices/hero/` and put all your `.wav` clips inside it.
+    - **Prefixes**: Name your files with underscores, e.g., `hero.wav`, `hero_2.wav`, `hero_v3.wav`.
+The API will automatically group these and use all available clips to create a more accurate voice profile.
 
 ### 2. Build the Image
 ```powershell

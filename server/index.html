@@ -4,173 +4,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Download Form</title>
+    <title>Universal XTTSv2 - Voice Lab</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
 </head>
 
-<body class="bg-light">
+<body>
     <div class="container py-5">
-        <h1 class="text-center mb-4">Text To Speech Server</h1>
-        <!-- Form 1 -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h4>Use a Cloned Voice</h4>
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <h1 class="mb-0">XTTS v2 <span class="text-info">Dashboard</span></h1>
+                <p class="text-muted">High-Performance Neural Speech Synthesis | <a href="/api-docs" class="text-info text-decoration-none small" target="_blank">API Docs 📖</a></p>
             </div>
-            <div class="card-body">
-                <p>Send a POST request to <code>/use-voice</code> with <code>{prompt, apiKey, speaker}</code></p>
-                <p>To get list of available cloned voices, Send a GET request to <code>/list-voices</code></p>
-                <p>Add .wav voice samples to <code>voices</code> folder to automatically include them as
-                    cloned voices</p>
-                <form id="voiceForm" action="/use-voice" method="POST">
-                    <div class="mb-3">
-                        <label for="apiKey" class="form-label">API Key</label>
-                        <input type="text" id="apiKey" name="apiKey" class="form-control" required />
-                    </div>
-                    <div class="mb-3">
-                        <label for="text1" class="form-label">Prompt/Text</label>
-                        <textarea id="text1" name="prompt" class="form-control" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="voice1" class="form-label">Speaker</label>
-                        <div class="input-group">
-                            <select id="voice1" name="speaker" class="form-select" required>
-                                <option value="">Select A Voice</option>
-                                <!-- Add options here -->
-                            </select>
-                            <button type="button" class="btn btn-outline-secondary" id="refreshVoices" title="Refresh Voices">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
-                                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
-                                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658a.25.25 0 0 1-.41-.192z"/>
-                                </svg>
-                            </button>
+            <div id="connectionStatus" class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-3 py-2">
+                Python Engine: Online
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs mb-5" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="clone-tab" data-bs-toggle="tab" data-bs-target="#clone" type="button" role="tab">🎙️ Generate Voice</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="lab-tab" data-bs-toggle="tab" data-bs-target="#lab" type="button" role="tab">🔬 Voice Lab</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="mainTabsContent">
+            <!-- Tab 1: Clone -->
+            <div class="tab-pane fade show active" id="clone" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <div class="glass-card p-4 h-100">
+                            <h4 class="mb-4">Synthesis Engine</h4>
+                            <form id="voiceForm">
+                                <div class="mb-4">
+                                    <label for="text1" class="form-label text-muted small uppercase fw-bold">Prompt Text</label>
+                                    <textarea id="text1" name="prompt" class="form-control" rows="6" placeholder="Enter text to synthesize..."></textarea>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12 mb-3">
+                                        <label for="voice1" class="form-label text-muted small uppercase fw-bold">Target Speaker</label>
+                                        <div class="input-group">
+                                            <select id="voice1" name="speaker" class="form-select" required>
+                                                <option value="">Select A Voice</option>
+                                            </select>
+                                            <button type="button" class="btn btn-outline-secondary" id="refreshVoices">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                                    <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                                                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658a.25.25 0 0 1-.41-.192z"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 py-3 mt-3 shadow-lg">Generate Neural Audio</button>
+                            </form>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary submit">Submit</button>
-                </form>
+                    <div class="col-lg-4">
+                        <div class="glass-card p-4 h-100 border-info border-opacity-10">
+                            <h4 class="mb-3">Quick Tips</h4>
+                            <ul class="text-muted small">
+                                <li class="mb-2"><strong>Quality:</strong> Use multiple clips per voice in the Lab for better results.</li>
+                                <li class="mb-2"><strong>Baking:</strong> Models with a <span class="badge-baked">Baked</span> label run faster and sound more consistent.</li>
+                                <li class="mb-2"><strong>Formatting:</strong> Use punctuation for better AI intonation.</li>
+                                <li class="mb-2"><strong>GPU:</strong> Blackwell (RTX 5090) takes < 1s for most sentences.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Tab 2: Voice Lab -->
+            <div class="tab-pane fade" id="lab" role="tabpanel">
+                <div class="glass-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="mb-0">Voice Profiles & Model Creation</h4>
+                        <button class="btn btn-outline-info btn-sm" id="refreshLab">Refresh Clip Cache</button>
+                    </div>
+                    <div id="speakerList" class="row g-4">
+                        <!-- Speaker cards injected here -->
+                    </div>
+                </div>
             </div>
         </div>
-        <div id="loading" class="text-center d-none">
-            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100"
-                preserveAspectRatio="xMidYMid" width="300" height="300" class="mx-auto"
-                style="shape-rendering: auto; display: block; background: transparent;">
-                <g>
-                    <rect fill="#095280" height="20" width="20" y="19" x="19">
-                        <animate calcMode="discrete" begin="0s" repeatCount="indefinite" dur="1s" keyTimes="0;0.125;1"
-                            values="#00a1f1;#095280;#095280" attributeName="fill" />
-                    </rect>
-                    <rect fill="#095280" height="20" width="20" y="19" x="40">
-                        <animate calcMode="discrete" begin="0.125s" repeatCount="indefinite" dur="1s"
-                            keyTimes="0;0.125;1" values="#00a1f1;#095280;#095280" attributeName="fill" />
-                    </rect>
-                    <rect fill="#095280" height="20" width="20" y="19" x="61">
-                        <animate calcMode="discrete" begin="0.25s" repeatCount="indefinite" dur="1s"
-                            keyTimes="0;0.125;1" values="#00a1f1;#095280;#095280" attributeName="fill" />
-                    </rect>
-                    <rect fill="#095280" height="20" width="20" y="40" x="19">
-                        <animate calcMode="discrete" begin="0.875s" repeatCount="indefinite" dur="1s"
-                            keyTimes="0;0.125;1" values="#00a1f1;#095280;#095280" attributeName="fill" />
-                    </rect>
-                    <rect fill="#095280" height="20" width="20" y="40" x="61">
-                        <animate calcMode="discrete" begin="0.375s" repeatCount="indefinite" dur="1s"
-                            keyTimes="0;0.125;1" values="#00a1f1;#095280;#095280" attributeName="fill" />
-                    </rect>
-                    <rect fill="#095280" height="20" width="20" y="61" x="19">
-                        <animate calcMode="discrete" begin="0.75s" repeatCount="indefinite" dur="1s"
-                            keyTimes="0;0.125;1" values="#00a1f1;#095280;#095280" attributeName="fill" />
-                    </rect>
-                    <rect fill="#095280" height="20" width="20" y="61" x="40">
-                        <animate calcMode="discrete" begin="0.625s" repeatCount="indefinite" dur="1s"
-                            keyTimes="0;0.125;1" values="#00a1f1;#095280;#095280" attributeName="fill" />
-                    </rect>
-                    <rect fill="#095280" height="20" width="20" y="61" x="61">
-                        <animate calcMode="discrete" begin="0.5s" repeatCount="indefinite" dur="1s" keyTimes="0;0.125;1"
-                            values="#00a1f1;#095280;#095280" attributeName="fill" />
-                    </rect>
-                    <g />
-                </g><!-- [ldio] generated by https://loading.io -->
-            </svg>
-            <h5 style="display: block; text-align: center;">Please wait...</h5>
-        </div>
-    </div>
-    <div class="p-5 m-5">&nbsp;</div>
-    <div class="bg-secondary fixed-bottom p-2">
-        <div class="container">
-            <audio src="" autoplay controls class="form-control" id="audio1"></audio>
-        </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+        <div id="loadingOverlay" class="d-none animate-pulse position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center" style="background: rgba(15, 23, 42, 0.9); z-index: 9999;">
+            <div class="spinner-border text-info" style="width: 4rem; height: 4rem;" role="status"></div>
+            <h5 class="mt-4 text-info fw-bold">Generating Neural Voice...</h5>
+            <p class="text-muted">Your RTX 5090 is working its magic.</p>
+        </div>
+    </div>
+
+    <!-- Audio Player Bar -->
+    <div class="fixed-bottom audio-bar">
+        <div class="container d-flex align-items-center gap-4">
+            <div class="text-nowrap small text-muted">Last Generated:</div>
+            <audio id="audio1" controls class="w-100"></audio>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const voices1 = document.getElementById('voice1');
-        const voices2 = document.getElementById('voice2');
-        const loading = document.getElementById('loading');
+        const loading = document.getElementById('loadingOverlay');
         const audio1 = document.getElementById('audio1');
         const form = document.getElementById('voiceForm');
         const refreshBtn = document.getElementById('refreshVoices');
+        const refreshLabBtn = document.getElementById('refreshLab');
+        const speakerList = document.getElementById('speakerList');
 
         if (form) form.addEventListener('submit', handleSubmit);
         if (refreshBtn) refreshBtn.addEventListener('click', loadVoices);
+        if (refreshLabBtn) refreshLabBtn.addEventListener('click', loadLab);
 
-        function loadVoices() {
+        async function loadVoices() {
             const currentVoice = voices1.value;
             voices1.innerHTML = '<option value="">Select A Voice</option>';
-            
-            fetch('/list-voices')
-                .then(response => response.json())
-                .then(data => {
-                    data.speakers.forEach(speaker => {
-                        const option = document.createElement('option');
-                        option.value = speaker;
-                        option.text = speaker;
-                        if (speaker === currentVoice) option.selected = true;
-                        voices1.appendChild(option);
-                    });
-                })
-                .catch(error => console.error(error));
+            try {
+                const response = await fetch('/list-voices');
+                const data = await response.json();
+                data.speakers.forEach(speaker => {
+                    const isBaked = speaker.isBaked;
+                    const name = speaker.name;
+                    const option = document.createElement('option');
+                    // Use a suffix for cloned versions to tell the backend to bypass the baked model
+                    option.value = isBaked ? name : `${name}#cloned`;
+                    option.innerHTML = name + (isBaked ? ' (Baked ✨)' : ' (Cloned 🎙️)');
+                    if (option.value === currentVoice) option.selected = true;
+                    voices1.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load voices:', error);
+            }
         }
 
-        // Initial load
-        loadVoices();
+        async function loadLab() {
+            speakerList.innerHTML = '<div class="col-12 text-center text-muted">Scanning speaker directory...</div>';
+            try {
+                const response = await fetch('/list-speaker-details');
+                const data = await response.json();
+                speakerList.innerHTML = '';
+                
+                data.speakers.forEach(speaker => {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-6 col-lg-4';
+                    
+                    let clipsHtml = speaker.clips.map(clip => `
+                        <div class="clip-item">
+                            <span class="small text-truncate">${clip.split('/').pop()}</span>
+                            <span class="badge bg-secondary opacity-50 small">${clip.split('.').pop()}</span>
+                        </div>
+                    `).join('');
 
+                    col.innerHTML = `
+                        <div class="glass-card p-4 h-100 d-flex flex-column border-opacity-50 ${speaker.bakedFile ? 'border-info' : ''}">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0 fw-bold">${speaker.name}</h5>
+                                ${speaker.bakedFile ? '<span class="badge-baked">BAKED</span>' : ''}
+                            </div>
+                            <div class="flex-grow-1 overflow-auto mb-3" style="max-height: 200px;">
+                                ${clipsHtml}
+                            </div>
+                            <div class="mt-auto">
+                                <button class="btn btn-sm ${speaker.bakedFile ? 'btn-outline-info' : 'btn-info'} w-100 fw-bold text-dark" onclick="bakeVoice('${speaker.name}')">
+                                    ${speaker.bakedFile ? 'Re-Bake Model 🔄' : 'Bake Custom Model 🚀'}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    speakerList.appendChild(col);
+                });
+            } catch (error) {
+                console.error('Failed to load lab:', error);
+                speakerList.innerHTML = '<div class="col-12 text-center text-danger">Failed to scan voices. Is the server running?</div>';
+            }
+        }
 
+        async function bakeVoice(name) {
+            loading.classList.remove('d-none');
+            const h5 = loading.querySelector('h5');
+            const p = loading.querySelector('p');
+            h5.innerText = "Extracting Neural Latents...";
+            p.innerText = `Synthesizing ${name}'s voice model for Blackwell.`;
+
+            try {
+                const response = await fetch('/bake-voice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ speaker: name })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert(`Success: ${name} model baked and ready for high-quality cloning!`);
+                    loadLab();
+                    loadVoices();
+                } else {
+                    alert('Baking failed: ' + result.error);
+                }
+            } catch (e) {
+                alert('Baking error: ' + e);
+            } finally {
+                loading.classList.add('d-none');
+                h5.innerText = "Generating Neural Voice...";
+                p.innerText = "Your RTX 5090 is working its magic.";
+            }
+        }
 
         async function handleSubmit(event) {
             event.preventDefault();
-            // disable all .submit buttons
-            document.querySelectorAll('.card').forEach(card => {
-                card.classList.add('d-none');
-            });
+            const prompt = event.target.prompt.value;
+            const speaker = event.target.speaker.value;
+
+            if (!prompt || !speaker) return alert("Please select a voice and enter text.");
+
+            // Zero-Lag Streaming: Connect audio element directly to the neural generator
+            const streamUrl = `/stream-voice?prompt=${encodeURIComponent(prompt)}&speaker=${encodeURIComponent(speaker)}`;
+            
+            // Set the source and play immediately
+            // The RTX 5090 will start yielding chunks in <200ms
+            audio1.src = streamUrl;
+            audio1.play().catch(e => console.error("Playback failed:", e));
+
+            // Briefly show pulse to acknowledge
             loading.classList.remove('d-none');
-            // /make a post`` request 
-            const endpoint = '/use-voice';
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    prompt: event.target.prompt.value,
-                    apiKey: event.target.apiKey.value,
-                    speaker: event.target.speaker.value,
-                    forceDownload: false
-                })
-            });
-
-            document.querySelectorAll('.card').forEach(card => {
-                card.classList.remove('d-none');
-            });
-            loading.classList.add('d-none');
-
-            if (!response.ok) {
-                const data = await response.json();
-                alert('Error: ' + (data.error || response.statusText));
-            } else {
-                const blob = await response.blob();
-                audio1.src = URL.createObjectURL(blob);
-                audio1.play();
-            }
+            setTimeout(() => loading.classList.add('d-none'), 1000);
         }
+
+        // Initial loads
+        loadVoices();
+        document.getElementById('lab-tab').addEventListener('shown.bs.tab', loadLab);
 
     </script>
 </body>

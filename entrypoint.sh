@@ -6,6 +6,10 @@ echo "-------------------------------------------------------"
 echo "Starting Universal TTS Engine (Blackwell-Optimised)"
 echo "-------------------------------------------------------"
 
+# 0. ENSURE NODE DEPENDENCIES ARE INSTALLED
+echo "Synchronizing Node.js dependencies..."
+cd /shared/server && npm install
+
 # 1. THE CRITICAL XTTS PATCH
 # This finds the exact line in the XTTS model code and forces a legacy load
 XTTS_FILE=$(python3 -c "import TTS.tts.models.xtts as xtts; print(xtts.__file__)")
