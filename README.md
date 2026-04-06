@@ -1,117 +1,104 @@
 # 🎙️ AI-Voice-Cloner (Blackwell Edition)
-A high-performance clone/derivative of [lojik-ng/docker-tts-api-ui](https://github.com/lojik-ng/docker-tts-api-ui).
-
-A high-performance, containerised Text-to-Speech & Audio Enhancement suite using Coqui XTTSv2. This build is specifically patched to support the **NVIDIA Blackwell (RTX 5090/5080)** architecture, ensuring near-instant voice cloning and neural cleaning on modern hardware.
+A high-performance Text-to-Speech & Audio Enhancement suite optimized for **NVIDIA Blackwell (RTX 5090/5080)** and modern AI workflows.
 
 ---
 
-## 🚀 Features
+## 🚀 Key Features
 
-*   **Persistent Inference**: The model stays resident in VRAM for < 1s generation times.
-*   **Blackwell Support**: Custom library patches for RTX 50-series compatibility.
-*   **Zero-Shot Cloning**: Clone any voice using a 6-10 second `.wav` sample.
-*   **Universal Build**: Automatically scales down to older hardware (e.g., GTX 1080).
-*   **Dual-Server Architecture**: Python Flask engine for AI + Node.js Express for API.
+*   **Neural Calibration**: Real-time tuning of **Creativity** (Temperature), **Stability** (Repetition Penalty), and **Pace** (Speed) directly from the dashboard.
+*   **High-Fidelity Isolation**: Built-in **UVR-MDX-NET** vocal separation patched with native Blackwell kernels (`torchvision::nms`) for ultra-fast audio cleaning.
+*   **Smart Neural Uploader**: Integrated file management with **Auto-Ranking** logic—simply upload a file, and the system numbers it correctly (e.g., `Adam_1` -> `Adam_2`).
+*   **Persistent Inference**: XTTSv2 model stays resident in VRAM for synthesis in < 1 second.
+*   **Clean Lab Logic**: Intelligent prefix-based grouping ensures all related clips and baked models appear under a single, professional speaker profile.
+*   **Universal Build**: Automatically scales and patches itself for everything from a GTX 1080 to an RTX 5090.
 
 ---
 
 ## 🛠️ Prerequisites
 
-Before cloning, ensure the host machine has:
-
 *   **NVIDIA Drivers**: Latest Game Ready or Studio drivers.
 *   **WSL2**: Windows Subsystem for Linux (`wsl --install`).
-*   **Docker Desktop**: Configured to use the WSL2 backend.
+*   **Docker Desktop**: Configured with the WSL2 backend and GPU support.
 
 ---
 
-## 📂 Project Structure
+## 📂 Project Organization
 
 ```plaintext
 .
-├── voices/               # Place reference .wav files here
+├── voices/               # Main Voice Bank (Clips & Baked Models)
+│   └── instrumental/     # Auto-archived background tracks (hidden from app)
 ├── models/               # AI model weights (auto-downloaded)
 ├── server/
-│   ├── index.js          # Node.js API Gateway
-│   ├── tts_engine.py     # Persistent Python AI Engine
-│   └── public/           # Generated audio files
-├── Dockerfile            # Blackwell-ready build
-└── entrypoint.sh         # Hardware patching & boot logic
+│   ├── index.js          # Node.js API Gateway (Express)
+│   ├── tts_engine.py     # Blackwell-Patched Python AI Engine (Flask)
+│   └── public/           # Dashboard & Asset hosting
+├── Dockerfile            # Optimized CUDA 12.8 / PyTorch 2.11 Layer
+└── entrypoint.sh         # Dynamic dependency & hardware patching logic
 ```
 
 ---
 
 ## ⚡ Quick Start
 
-### 1. Prepare your Voices
-Place clear `.wav` files of the voice you wish to clone into the `/voices` directory.
-- **Single Clip**: Just place a file like `hero.wav`.
-- **Multiple Clips (Higher Quality)**: You can improve the cloning quality by providing multiple samples. There are two ways to do this:
-    - **Folders**: Create a folder named `voices/hero/` and put all your `.wav` clips inside it.
-    - **Prefixes**: Name your files with underscores, e.g., `hero.wav`, `hero_2.wav`, `hero_v3.wav`.
-The API will automatically group these and use all available clips to create a more accurate voice profile.
+### 1. One-Click Build & Launch
+For the fastest setup, use the included automation scripts:
+- **Windows (PowerShell)**: `. 'rebuild.ps1'`
+- **Linux / WSL2 (Bash)**: `chmod +x rebuild.sh && ./rebuild.sh`
 
-### 2. Build the Image
+These scripts handle stopping existing containers, rebuilding the Blackwell-optimized image, and launching the dashboard at `http://localhost:2902`.
+
+#### Manual Deployment (Reference)
 ```powershell
 docker build -t ai-voice-cloner .
-```
-
-### 3. Run the Container
-Replace `C:\Path\To\Project` with your actual local path.
-
-```powershell
 docker run -d -it -p 2902:2902 --gpus all --restart=unless-stopped `
--e TORCH_FORCE_WEIGHTS_ONLY_LOAD=0 `
 -v "C:\Path\To\Project:/shared" `
--v "C:\Path\To\Project\models:/root/.local/share/tts" `
--v "/usr/lib/wsl/lib:/usr/lib/wsl/lib:ro" `
---shm-size=8gb `
---name ai-voice-cloner ai-voice-cloner
+--shm-size=8gb --name ai-voice-cloner ai-voice-cloner
 ```
 
----
+### 2. The Neural Uploader (Recommended)
+Once the dashboard is running at `http://localhost:2902`, navigate to the **Voice Lab** tab:
+- **Drop & Sync**: Use the **Neural Upload** card to select an audio sample.
+- **Auto-Register**: Enter a speaker name (e.g., "Adam"). 
+- **Smart Ranking**: The system automatically numbers the file (e.g., `Adam_1.wav`) and adds it to the speaker's profile in real-time.
 
-## 📡 API Usage
-
-### Generate Voice
-`POST http://localhost:2902/use-voice`
-
-**Body (JSON):**
-```json
-{
-  "prompt": "The 5090 is officially the king of speech synthesis.",
-  "apiKey": "your_key_here",
-  "speaker": "hero",
-  "language": "en"
-}
-```
-
-### List Voices
-`GET http://localhost:2902/list-voices`
+### 3. Manual Preparation (Legacy/Batch)
+If you have a large library, you can still batch-copy files into the `/voices` directory.
+- **Prefix Grouping**: Name files like `hero_1.wav`, `hero_2.wav`. The engine will group them under a single "hero" profile based on the text before the underscore.
 
 ---
 
-## 🔧 Hardware Optimization Notes
+## 📡 API & Dashboard
 
-### RTX 5090 / 9800X3D
-On this hardware, the first request will take ~15 seconds to load the 2GB model into VRAM. Every subsequent request will be near-instant. Use the `--shm-size=8gb` flag to prevent memory bottlenecks between the CPU and GPU.
+### Integrated Dashboard
+Access the high-contrast dashboard at `http://localhost:2902`. 
+- **Synthesis Engine**: Featuring real-time **Neural Calibration** sliders for advanced creative control.
+- **Vocal Lab**: Unified view of all voice profiles, clips, and baked models.
+- **Neural Enhancer**: One-click **Vocal Isolation** and **Denoising** powered by Blackwell kernels.
 
-### GTX 1080 / Older Cards
-This build is **"Universal"**. It will detect older CUDA cores and adjust the kernels accordingly. Ensure you have at least 8GB of VRAM available for stable performance.
+### Interactive API Documentation (Swagger)
+The engine includes a full **Swagger UI** for developers and power users to test endpoints directly.
+- **Documentation URL**: `http://localhost:2902/api-docs`
+- **Definition Source**: All API endpoints and schemas are defined in [server/index.js](server/index.js).
+
+### Synthesis Parameters (POST /use-voice)
+| Parameter | Description | Recommended |
+| :--- | :--- | :--- |
+| `temperature` | **Creativity**: Higher = more expressive, Lower = robotic. | 0.65 - 0.75 |
+| `repetition_penalty` | **Stability**: Prevents "looping" or stuttering. | 5.0 - 10.0 |
+| `speed` | **Pace**: Playback speed of the generated audio. | 1.0 (Normal) |
 
 ---
 
-## ⚠️ Troubleshooting
+## 🔧 Hardware & Performance Note
 
-1.  **GPU not "touching" the workload?** Ensure you are passing the `/usr/lib/wsl/lib` volume mount. This is required for Docker to see the Blackwell drivers on Windows.
-2.  **AttributeError / Pickle Errors**: These are handled by the `entrypoint.sh` patches. If they persist, ensure `TORCH_FORCE_WEIGHTS_ONLY_LOAD=0` is set in your environment.
-3.  **Robotic Audio**: Check your reference `.wav` file. It should be clean, mono, and roughly 10 seconds long.
+### RTX 50-Series (Blackwell) Consistency
+This build includes the **torchvision (cu128)** layer. This fix resolves the `nms operator` runtime error common in modern PyTorch builds on 50-series hardware, ensuring that **Vocal Isolation** and **MDX separations** run at full performance without fallback to CPU.
 
 ---
 
-## 📄 License
-
-This project is for educational/personal use. Please adhere to the Coqui TTS and Model licenses regarding commercial usage and ethical AI voice cloning.
+## 📄 License & Ethics
+This project is for personal research. Always adhere to Coqui TTS licenses and ensure you have permission to use the voice samples you clone.
 
 ---
 
