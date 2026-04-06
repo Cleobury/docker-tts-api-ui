@@ -1,7 +1,7 @@
-# 🎙️ Universal XTTSv2 API (RTX 50-Series Optimized)
+# 🎙️ AI-Voice-Cloner (Blackwell Edition)
 A high-performance clone/derivative of [lojik-ng/docker-tts-api-ui](https://github.com/lojik-ng/docker-tts-api-ui).
 
-A high-performance, containerised Text-to-Speech API using Coqui XTTSv2. This build is specifically patched to support the **NVIDIA Blackwell (RTX 5090/5080)** architecture and PyTorch 2.6+ security layers, ensuring near-instant voice cloning on modern hardware.
+A high-performance, containerised Text-to-Speech & Audio Enhancement suite using Coqui XTTSv2. This build is specifically patched to support the **NVIDIA Blackwell (RTX 5090/5080)** architecture, ensuring near-instant voice cloning and neural cleaning on modern hardware.
 
 ---
 
@@ -53,7 +53,7 @@ The API will automatically group these and use all available clips to create a m
 
 ### 2. Build the Image
 ```powershell
-docker build -t my-universal-tts .
+docker build -t ai-voice-cloner .
 ```
 
 ### 3. Run the Container
@@ -66,7 +66,7 @@ docker run -d -it -p 2902:2902 --gpus all --restart=unless-stopped `
 -v "C:\Path\To\Project\models:/root/.local/share/tts" `
 -v "/usr/lib/wsl/lib:/usr/lib/wsl/lib:ro" `
 --shm-size=8gb `
---name docker-tts-api-ui my-universal-tts
+--name ai-voice-cloner ai-voice-cloner
 ```
 
 ---

@@ -4,6 +4,54 @@ from flask import Flask, request, jsonify, Response, stream_with_context
 from TTS.api import TTS
 import torch
 import struct
+import sys
+import traceback
+
+# --- NEURAL COMPATIBILITY PATCH ---
+# Modern torchaudio (2.1+) removed 'torchaudio.backend'. 
+# DeepFilterNet still looks for it. We mock it here to ensure Blackwell compatibility.
+import torchaudio
+from types import ModuleType
+try:
+    import torchaudio.backend
+except ImportError:
+    # Create the top-level torchaudio.backend
+    mock_backend = ModuleType("torchaudio.backend")
+    sys.modules["torchaudio.backend"] = mock_backend
+    
+    # Create torchaudio.backend.common
+    mock_common = ModuleType("torchaudio.backend.common")
+    sys.modules["torchaudio.backend.common"] = mock_common
+    
+    # Point the mock common to the main torchaudio module or metadata
+    # DeepFilterNet specifically needs torchaudio.backend.common.AudioMetaData
+    # In versions 2.x, AudioMetaData is move to the top level.
+    mock_common.AudioMetaData = getattr(torchaudio, "AudioMetaData", None)
+
+# --- THE NEURAL-BRIDGE (Legacy Metadata Support) ---
+# Modern torchaudio (2.11+) removed .info(). We bridge it using soundfile.
+import soundfile as sf
+class MockAudioMetaData:
+    def __init__(self, sr, frames, channels):
+        self.sample_rate = sr
+        self.num_frames = frames
+        self.num_channels = channels
+
+def mock_info(filepath, **kwargs):
+    try:
+        data = sf.info(filepath)
+        return MockAudioMetaData(data.samplerate, data.frames, data.channels)
+    except Exception as e:
+        print(f"Neural-Bridge Metadata Error: {e}")
+        # Return a safe default for 5090 processing
+        return MockAudioMetaData(48000, 0, 1)
+
+# Inject the bridge into the torchaudio namespace
+torchaudio.info = mock_info
+if not hasattr(torchaudio, "AudioMetaData"):
+    torchaudio.AudioMetaData = MockAudioMetaData
+if not hasattr(sys.modules["torchaudio.backend.common"], "AudioMetaData"):
+    sys.modules["torchaudio.backend.common"].AudioMetaData = MockAudioMetaData
 
 app = Flask(__name__)
 
@@ -34,6 +82,10 @@ def generate():
         # Logic to get latents with Tensor-safe checks
         gpt_cond_latent = None
         speaker_embedding = None
+        # --- INFERENCE PARAMETERS ---
+        temperature = float(request.args.get('temperature', 0.65))
+        repetition_penalty = float(request.args.get('repetition_penalty', 5.0))
+        speed = float(request.args.get('speed', 1.0))
 
         if isinstance(speaker_wav, str) and speaker_wav.endswith(".pth"):
             latents = torch.load(speaker_wav, map_location=model.device)
@@ -64,9 +116,9 @@ def generate():
                 language=language,
                 gpt_cond_latent=gpt_cond_latent,
                 speaker_embedding=speaker_embedding,
-                temperature=0.65,
-                repetition_penalty=5.0,
-                speed=1.0,
+                temperature=temperature,
+                repetition_penalty=repetition_penalty,
+                speed=speed,
                 enable_text_splitting=True,
                 stream_chunk_size=20 # Small chunk size for low latency 
             )
@@ -81,6 +133,7 @@ def generate():
 
     except Exception as e:
         print(f"Streaming Error: {e}")
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/bake', methods=['POST'])
@@ -109,6 +162,69 @@ def bake():
         return jsonify({"success": True, "path": out_path})
     except Exception as e:
         print(f"Bake Error: {e}")
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# --- BLACKWELL NEURAL ENHANCER CORE ---
+@app.route('/enhance', methods=['POST'])
+def enhance_audio():
+    try:
+        data = request.json
+        input_path = data['input_path']
+        output_path = data['output_path']
+        mode = data.get('mode', 'vocal_isolation') # 'vocal_isolation' or 'denoise'
+        
+        print(f"Enhancement Task: {mode} for {input_path}")
+        
+        if mode == 'vocal_isolation':
+            from audio_separator.separator import Separator
+            # Initialize separator with Blackwell-optimized settings
+            separator = Separator(
+                output_dir=os.path.dirname(output_path),
+                model_file_dir="/shared/models/enhancer",
+                output_format="WAV",
+                # Use the Voc_FT model which is excellent for high-fidelity vocal extraction
+                mdx_params={"hop_length": 1024, "segment_size": 256, "overlap": 0.25, "batch_size": 1}
+            )
+            separator.load_model('UVR-MDX-NET-Voc_FT.onnx')
+            output_files = separator.separate(input_path)
+            
+            # audio-separator returns a list of files; we want the vocal one
+            # Usually named something like "input_Vocals.wav"
+            vocal_file = next((f for f in output_files if 'Vocals' in f), None)
+            instr_file = next((f for f in output_files if 'Instrumental' in f), None)
+            
+            if vocal_file:
+                vocal_path = os.path.join(os.path.dirname(input_path), vocal_file)
+                os.rename(vocal_path, output_path)
+            
+            # Archive the instrumental if found
+            if instr_file:
+                instr_dir = os.path.join(os.path.dirname(input_path), "instrumental")
+                os.makedirs(instr_dir, exist_ok=True)
+                instr_src = os.path.join(os.path.dirname(input_path), instr_file)
+                instr_dest = os.path.join(instr_dir, instr_file)
+                os.rename(instr_src, instr_dest)
+                print(f"Archived Instrumental to: {instr_dest}")
+            
+        elif mode == 'denoise':
+            from df.enhance import enhance, init_df, load_audio, save_audio
+            # Initialize DeepFilterNet3 (best-in-class noise reduction)
+            model, df_state, _ = init_df()
+            # Use the modern API to get the sample rate from df_state
+            sr = df_state.sr()
+            audio, _ = load_audio(input_path, sr=sr)
+            # Perform neural enhancement
+            enhanced = enhance(model, df_state, audio)
+            save_audio(output_path, enhanced, sr)
+            
+        else:
+            raise ValueError(f"Unknown enhancement mode: {mode}")
+
+        return jsonify({"success": True, "output_path": output_path})
+    except Exception as e:
+        print(f"Enhancement Error: {e}")
+        traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':

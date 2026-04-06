@@ -1,8 +1,8 @@
 # Rebuild script for Universal XTTSv2 API (PowerShell)
 # This script will stop/remove the existing container, rebuild the image, and start a fresh one.
 
-$ImageName = "my-universal-tts"
-$ContainerName = "docker-tts-api-ui"
+$ImageName = "ai-voice-cloner"
+$ContainerName = "ai-voice-cloner"
 $ProjectPath = $PSScriptRoot
 
 # 1. Stop and remove existing container if it exists

@@ -1,17 +1,23 @@
 FROM ghcr.io/coqui-ai/tts
 
-# Install system dependencies + the missing NVIDIA NPP libraries for CUDA 12.8
+# Install system dependencies + missing NVIDIA libraries for CUDA 12.8
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     curl \
+    libsndfile1 \
     libnpp-12-8 \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js
 RUN curl -sL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
 
-# --- THE UNIVERSAL BRIDGE (5090 + 1080) ---
-RUN pip3 install --no-cache-dir --upgrade torch torchaudio torchcodec --index-url https://download.pytorch.org/whl/cu128
+# --- BASE AI RUNTIME (HEAVY LAYER - CACHED) ---
+RUN pip3 install --no-cache-dir --upgrade \
+    torch torchvision torchaudio torchcodec --index-url https://download.pytorch.org/whl/cu128
+
+# --- NEURAL ENHANCER LIBRARIES (LIGHTER LAYER) ---
+RUN pip3 install --no-cache-dir "audio-separator[gpu]" deepfilternet
 
 # --- THE PICKLE PATCH (Fixed Path) ---
 RUN export TTS_PATH=$(python3 -c "import TTS; print(TTS.__path__[0])") && \

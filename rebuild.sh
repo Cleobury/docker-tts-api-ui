@@ -2,8 +2,8 @@
 # Rebuild script for Universal XTTSv2 API (Bash/WSL2)
 # This script will stop/remove the existing container, rebuild the image, and start a fresh one.
 
-IMAGE_NAME="my-universal-tts"
-CONTAINER_NAME="docker-tts-api-ui"
+IMAGE_NAME="ai-voice-cloner"
+CONTAINER_NAME="ai-voice-cloner"
 # Get the absolute path of the directory where this script is located
 PROJECT_PATH=$(pwd)
 

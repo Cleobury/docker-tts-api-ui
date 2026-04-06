@@ -8,6 +8,7 @@ echo "-------------------------------------------------------"
 
 # 0. ENSURE NODE DEPENDENCIES ARE INSTALLED
 echo "Synchronizing Node.js dependencies..."
+cd /shared/server && npm install express-fileupload lucia-auth --save
 cd /shared/server && npm install
 
 # 1. THE CRITICAL XTTS PATCH
